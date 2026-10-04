@@ -1,8 +1,9 @@
 import { SEED_ROWS } from './seed'
 import type { EntryRow } from './types'
 
-// 本地持久化：数据放在 localStorage 里，刷新、关掉再打开都还在。
-const STORAGE_KEY = 'forest-fire-patrol:entries'
+// 本地持久化：数据放在 localStorage 里，刷新、关掉再打开都在。
+// v2：林木生长与防火林带换过多期样地/林带种子，旧缓存结构对不上，直接弃用。
+const STORAGE_KEY = 'forest-fire-patrol:entries:v2'
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
@@ -41,11 +42,17 @@ export function listRows(key: string): EntryRow[] {
 }
 
 export function saveRows(key: string, rows: EntryRow[]): void {
-  const next = { ...allRows(), [key]: rows }
-  cache = next
+  commitAll({ [key]: rows })
+}
+
+// 一次落库多个模块：要么整份写入成功，要么抛错，调用方据此把三处改动一起回退。
+// localStorage 只有一次 setItem，写入失败会抛异常，缓存里的草稿也随之丢弃。
+export function commitAll(updates: Record<string, EntryRow[]>): void {
+  const next = { ...allRows(), ...updates }
   if (typeof window !== 'undefined' && window.localStorage) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
   }
+  cache = next
 }
 
 export function resetRows(key: string): EntryRow[] {

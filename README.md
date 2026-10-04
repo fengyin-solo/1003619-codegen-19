@@ -14,8 +14,10 @@
 ├── frontend/                 Vue 3 + Vite + TypeScript 前端（唯一运行单元）
 │   ├── src/views/            每个业务模块一个页面
 │   ├── src/api/local-service.ts   本地数据服务：列表、筛选、动作流转、导出
+│   ├── src/api/plot-review.ts     样地复核领域服务：口径重算、复核确认事务与跨模块联动
 │   ├── src/data/             模块元数据 / 示例数据 / localStorage 持久化
 │   ├── src/stores/           会话与筛选状态
+│   ├── scripts/plot-review.smoke.cjs  样地复核领域逻辑的 Node 冒烟脚本
 │   └── vite.config.ts        dev server 配置（open: false，无 /api 代理）
 ├── .gitignore
 └── docker-compose.yml
@@ -68,4 +70,12 @@ npm run build
 - 字段、状态、动作与流转目标集中在 `frontend/src/data/modules.ts`；示例数据在
   `frontend/src/data/seed.ts`。
 - 状态流转只允许在 `local-service.ts` 里改，页面组件不做业务判断。
-- 想回到初始数据：清掉浏览器里 `forest-fire-patrol:entries` 这一项，或调用 `resetModule(模块)`。
+- 林木生长模块额外提供「样地复核」页签（`views/treegrowth/plot-review.vue`，逻辑在
+  `api/plot-review.ts`）：按样地编号/林分类型/记录状态筛选，多期记录展示胸径、树高、郁闭度
+  变化；已归档记录沿用旧口径原数据，未归档记录按 2026 新口径重算，缺调查员的旧记录确认时
+  优先沿用同地最近调查员、无人可沿用时落「待补录（历史数据）」占位。
+- 复核确认是一个跨模块事务：结论写回 `treegrowth`、防火林带建议写入 `firebelt`、巡护复查
+  事项写入 `patrol`，三处经 `local-store.commitAll` 一次落库，失败整体回退；建议与复查项按
+  `来源批次` 幂等，重复确认不重复生成；确认串行化，并发复核只保留一个结论。
+- 想回到初始数据：清掉浏览器里 `forest-fire-patrol:entries:v2` 这一项，或调用 `resetModule(模块)`。
+- 领域逻辑自检：`node scripts/plot-review.smoke.cjs`（mock localStorage，不依赖浏览器）。
