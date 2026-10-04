@@ -48,6 +48,16 @@ export function saveRows(key: string, rows: EntryRow[]): void {
   }
 }
 
+// 多模块一起落库：整个存储对象一次 setItem，要么全写上要么全没写。
+// 先写 localStorage 再换缓存，写盘抛错时内存态保持原样，调用方拿到的就是「已回退」。
+export function saveRowsBatch(entries: Record<string, EntryRow[]>): void {
+  const next = { ...allRows(), ...entries }
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+  }
+  cache = next
+}
+
 export function resetRows(key: string): EntryRow[] {
   const rows = clone(SEED_ROWS[key] ?? [])
   saveRows(key, rows)

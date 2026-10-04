@@ -85,3 +85,6 @@ desktop.ini
 *.db
 *.pid
 *.seed
+
+# 单元测试打包产物
+frontend/test/.*.test.mjs
